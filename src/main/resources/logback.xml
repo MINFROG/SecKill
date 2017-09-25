@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="300 seconds" debug="false">
+	<appender name="stdoutLogger" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%d{yyyy-MM-dd HH:mm:ss}: %p [%t] %c{1} %F:%L - %m%n</pattern>
+		</encoder>
+	</appender>
+
+	<!-- 为每个业务生成一个日志文件  -->
+	<appender name="rootLogger" class="ch.qos.logback.classic.sift.SiftingAppender">
+		<discriminator>
+			<Key>destination</Key>
+			<DefaultValue>item-seckill</DefaultValue>
+		</discriminator>
+		<sift>
+			<appender name="${destination}" class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<File>/data/logs/tomcat/item-seckill/${destination}.log</File>
+				<encoder>
+					<pattern>%d{yyyy-MM-dd HH:mm:ss}: %p [%t] %c{1} %F:%L - %m%n</pattern>
+				</encoder>
+				<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+					<FileNamePattern>
+					  /data/logs/tomcat/item-seckill/${destination}-%d{yyyy-MM-dd}-%i.log.gz
+					</FileNamePattern>
+					<timeBasedFileNamingAndTriggeringPolicy
+						class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+						<maxFileSize>1024MB</maxFileSize>
+					</timeBasedFileNamingAndTriggeringPolicy>
+					<maxHistory>15</maxHistory>
+				</rollingPolicy>
+			</appender>
+		</sift>
+	</appender>
+
+	
+	
+	<logger name="com.yhp.item" additivity="false">
+		<appender-ref ref="rootLogger" />
+	</logger>
+	
+<!-- 	<logger name="org.mybatis.spring" additivity="true"> -->
+<!-- 		<level value="DEBUG" /> -->
+<!-- 	</logger> -->
+	<!-- 根日志 -->
+	<root level="DEBUG">
+		<appender-ref ref="stdoutLogger" />
+		<!-- <appender-ref ref="rootLogger" /> -->
+	</root>
+
+</configuration>
