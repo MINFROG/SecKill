@@ -44,7 +44,7 @@
 		WHERE seckill_id=#{seckillId}
 	</select>
 
-	<select id="queryAll" resultType="Seckill">
+	<select id="queryAll" resultType="com.yhp.seckill.vo.Seckill">
 		SELECT *
 		FROM seckill
 		ORDER BY create_time DESC

@@ -7,12 +7,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.yhp.seckill.bo.SeckillBo;
 import com.yhp.seckill.dao.SeckillDao;
 import com.yhp.seckill.dao.SuccessKilledDao;
+import com.yhp.seckill.enums.SeckillStatEnum;
+import com.yhp.seckill.exception.RepeatKillException;
+import com.yhp.seckill.exception.SeckillCloseException;
 import com.yhp.seckill.exception.SeckillException;
-import com.yhp.seckill.exception.SeckillExceptionCode;
 import com.yhp.seckill.utils.MD5Utils;
 import com.yhp.seckill.vo.Exposer;
 import com.yhp.seckill.vo.Seckill;
@@ -67,7 +70,7 @@ public class SeckillBoImpl implements SeckillBo {
 		return new Exposer(true, md5, seckillId);
 	}
 
-	@Override
+	@Transactional
 	public SeckillExecution executeSeckill(long seckillId, long userPhone,
 			String md5) throws SeckillException {
 		if (md5 == null || !md5.equals(MD5Utils.getMD5(SALT + seckillId))) {
@@ -80,25 +83,24 @@ public class SeckillBoImpl implements SeckillBo {
 			int updateCount = seckillDao.reduceNumber(seckillId, nowTime);
 			if (updateCount <= 0) {
 				// 没有更新库存记录，说明秒杀结束
-				throw new SeckillException(SeckillExceptionCode.SECKILL_CLOSE_EXCEPTION.getErrCode(),SeckillExceptionCode.SECKILL_CLOSE_EXCEPTION.getErrMsg());
+				throw new SeckillCloseException("seckill is closed");
 			} else {
 				// 否则更新了库存，秒杀成功,增加明细
 				int insertCount = successKilledDao.insertSuccessKilled(seckillId, userPhone);
 				// 看是否该明细被重复插入，即用户是否重复秒杀
 				if (insertCount <= 0) {
-					throw new SeckillException(SeckillExceptionCode.SECKILL_REPEAT_EXCEPTION.getErrCode(),SeckillExceptionCode.SECKILL_REPEAT_EXCEPTION.getErrMsg());
+					 throw new RepeatKillException("seckill repeated");
 				} else {
 					// 秒杀成功,得到成功插入的明细记录,并返回成功秒杀的信息
 					SuccessKilled successKilled = successKilledDao
 							.queryByIdWithSeckill(seckillId, userPhone);
-					return new SeckillExecution(seckillId, 1, "秒杀成功",
-							successKilled);
+					 return new SeckillExecution(seckillId, SeckillStatEnum.SUCCESS,successKilled);
 				}
 			}
 		} catch (Exception ex) {
 			log.error("秒杀失败！seckillId = {} ,userPhone = {} ,md5 = {}",new Object[] { seckillId, userPhone, md5, ex });
 			// 所以编译期异常转化为运行期异常
-			throw new SeckillException(ex.getMessage());
+			 throw new SeckillException("seckill inner error :"+ex.getMessage());
 		}
 
 	}
