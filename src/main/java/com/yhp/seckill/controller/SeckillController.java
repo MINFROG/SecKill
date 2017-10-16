@@ -4,13 +4,13 @@ import java.util.Date;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
 
 import com.yhp.seckill.bo.SeckillBo;
 import com.yhp.seckill.enums.SeckillStatEnum;
@@ -27,14 +27,15 @@ import com.yhp.seckill.vo.SeckillResult;
  * @version v1.0 
  * @date 2017年9月27日下午1:38:05
  */
-@RestController
+//@RestController
+@Controller
 @RequestMapping("/seckill")//url:模块/资源/{}/细分
 public class SeckillController {
 	
 	@Autowired
 	private SeckillBo seckillBo;
 	
-	@RequestMapping(value = "/list",method = RequestMethod.GET)
+	@RequestMapping(value = "/list" , method = RequestMethod.GET )
 	public String queryforList(Model model){
 		List<Seckill> list = seckillBo.querySeckillList();
 		model.addAttribute("list", list);
@@ -55,11 +56,9 @@ public class SeckillController {
 	}
 	
 	 //ajax ,json暴露秒杀接口的方法
-    @RequestMapping(value = "/{seckillId}/exposer",
-                    method = RequestMethod.POST,
-                    produces = {"application/json;charset=UTF-8"})
-    @ResponseBody
-    public SeckillResult<Exposer> exposer(Long seckillId)
+	@ResponseBody
+    @RequestMapping(value = "/{seckillId}/exposer",method = RequestMethod.GET,produces = {"application/json;charset=UTF-8"})
+    public SeckillResult<Exposer> exposer(@PathVariable("seckillId")Long seckillId)
     {
         SeckillResult<Exposer> result;
         try{
@@ -76,18 +75,18 @@ public class SeckillController {
     
     
     
-    @RequestMapping(value = "/{seckillId}/{md5}/execution", method = RequestMethod.POST,produces = {"application/json;charset=UTF-8"})
     @ResponseBody
+    @RequestMapping(value = "/{seckillId}/{md5}/execution", method = RequestMethod.POST,produces = {"application/json;charset=UTF-8"})
     public SeckillResult<SeckillExecution> execute(@PathVariable("seckillId") Long seckillId,
                                                    @PathVariable("md5") String md5,
-                                                   @CookieValue(value = "killPhone",required = false) Long phone){
-        if (phone==null){
+                                                   @CookieValue(value = "userPhone",required = false) Long userPhone){
+        if (userPhone==null){
             return new SeckillResult<SeckillExecution>(false,"未注册");
         }
         SeckillResult<SeckillExecution> result;
 
         try {
-            SeckillExecution execution = seckillBo.executeSeckill(seckillId, phone, md5);
+            SeckillExecution execution = seckillBo.executeSeckill(seckillId, userPhone, md5);
             return new SeckillResult<SeckillExecution>(true, execution);
         }catch (RepeatKillException e1)
         {
@@ -107,6 +106,7 @@ public class SeckillController {
     }
 
     //获取系统时间
+    @ResponseBody
     @RequestMapping(value = "/time/now",method = RequestMethod.GET)
     public SeckillResult<Long> time(){
         Date now=new Date();

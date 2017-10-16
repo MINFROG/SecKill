@@ -6,6 +6,7 @@
 
     <groupId>com.yhp.item</groupId>
     <artifactId>item-seckill</artifactId>
+    <packaging>war</packaging>
     <version>1.0.0</version>
 
     <parent>
@@ -19,6 +20,23 @@
             <artifactId>spring-boot-starter-web</artifactId>
             <scope>provided</scope>
         </dependency>
+        <!-- 添加servlet支持 -->
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!--支持jsp解析-->
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>jstl</artifactId>
+		</dependency>  
+		<!--支持jsp解析-->
+		<dependency>
+			<groupId>org.apache.tomcat.embed</groupId>
+			<artifactId>tomcat-embed-jasper</artifactId>
+			<scope>provided</scope>
+		</dependency>  
         <!-- mybatis与spring整合的启动项 -->
         <dependency>
             <groupId>org.mybatis.spring.boot</groupId>
