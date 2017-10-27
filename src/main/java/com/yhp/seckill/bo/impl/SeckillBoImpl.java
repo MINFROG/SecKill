@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.yhp.seckill.bo.CacheBo;
 import com.yhp.seckill.bo.SeckillBo;
 import com.yhp.seckill.dao.SeckillDao;
 import com.yhp.seckill.dao.SuccessKilledDao;
@@ -41,6 +42,9 @@ public class SeckillBoImpl implements SeckillBo {
 	
 	@Autowired
 	private SuccessKilledDao successKilledDao;
+	
+	@Autowired
+	private CacheBo cacheBo;
 
 	@Override
 	public List<Seckill> querySeckillList() {
@@ -54,9 +58,17 @@ public class SeckillBoImpl implements SeckillBo {
 
 	@Override
 	public Exposer exportSeckillUrl(long seckillId) {
-		Seckill seckill = seckillDao.queryById(seckillId);
-		// 说明查不到这个秒杀产品的记录
-		if (seckill == null) return new Exposer(false, seckillId);
+		Seckill seckill = (Seckill) cacheBo.get(seckillId+"");
+		if(seckill == null){
+			seckill = seckillDao.queryById(seckillId);
+			if(seckill == null) {
+				// 说明查不到这个秒杀产品的记录
+				return new Exposer(false, seckillId);
+			}else{
+				cacheBo.set(seckillId+"", seckill);
+			}
+			
+		}
 		// 若是秒杀未开启
 		Date startTime = seckill.getStartTime();
 		Date endTime = seckill.getEndTime();
@@ -97,11 +109,19 @@ public class SeckillBoImpl implements SeckillBo {
 					 return new SeckillExecution(seckillId, SeckillStatEnum.SUCCESS,successKilled);
 				}
 			}
-		} catch (Exception ex) {
-			log.error("秒杀失败！seckillId = {} ,userPhone = {} ,md5 = {}",new Object[] { seckillId, userPhone, md5, ex });
-			// 所以编译期异常转化为运行期异常
+		} catch (SeckillCloseException e1)
+        {
+            throw e1;
+        }catch (RepeatKillException e2)
+        {
+            throw e2;
+        }catch (Exception ex)
+        {
+        	log.error("秒杀失败！seckillId = {} ,userPhone = {} ,md5 = {}",new Object[] { seckillId, userPhone, md5, ex });
+			// 所有编译期异常转化为运行期异常
 			 throw new SeckillException("seckill inner error :"+ex.getMessage());
-		}
+        }
+		
 
 	}
 
